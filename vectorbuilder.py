@@ -21,7 +21,9 @@ class Game:
         self.funcy = []
         self.finished = False
         self.distance = None
+        self.coeff = []
         self.newd = []
+        self.traceline = []
 
         
 
@@ -52,16 +54,43 @@ class Game:
 
 
     def update(self):
+        pvx, pvy = 400, 300
+        cvx, cvy, cv = None, None, None
+        speed = None
         self.screen.fill((255, 255, 255))
+
         
         drawing = []
         if (not self.funcx or len(self.funcx) < 2):
             return
         for i in range(len(self.funcx)):
             drawing.append((self.funcx[i], self.funcy[i]))
-        pygame.draw.lines(self.screen, (0, 0, 255), True, drawing)
-        self.draw_vector(int(len(self.funcx) / 2), (400, 300))
+        # pygame.draw.lines(self.screen, (0, 0, 255), True, drawing)
 
+
+        for i in range(len(self.coeff)):
+            speed = math.ceil(i / 2)
+            speed *= -1 if i % 2 == 0 else 1
+            print(speed)
+            rotate = math.e ** (2j * math.pi * speed * self.sdt)
+            cvx = self.coeff[i][0] * rotate
+            cvy = self.coeff[i][1] * rotate
+            cv = cvx + cvy
+            
+
+            self.draw_line((round(pvx), round(pvy)), (round(cv.real+ pvx), round(cv.imag + pvy)), (255, 100, 0))
+            pvx += cv.real
+            pvy += cv.imag
+
+
+        self.traceline.append((pvx, pvy))
+        if len(self.traceline) > 1:
+            pygame.draw.lines(self.screen, (0, 0, 0), False, self.traceline)
+        if self.sdt > 1:
+            self.traceline.clear()
+            self.sdt = 0
+
+            
 
         pygame.display.flip()
         self.sdt += self.dt / 10
@@ -71,6 +100,8 @@ class Game:
     def start_drawing(self):
         if(pygame.mouse.get_just_pressed()[0]):
             self.finished = False
+            self.traceline.clear()
+            self.coeff.clear()
             self.funcx.clear()
             self.funcy.clear()
             self.newd.clear()
@@ -89,7 +120,7 @@ class Game:
                 pass
     
             self.distance = self.get_distance(self.Mouse_pos, self.prev_points)
-            if (self.distance > 100):
+            if (self.distance > 10):
                 self.add_point(self.Mouse_pos)
                 self.draw_circle(self.Mouse_pos, 3, (0, 0, 255))
                 self.distance = 0
@@ -119,10 +150,12 @@ class Game:
                 circles = (x, y)
                 self.add_point(circles)
                 self.draw_circle(circles, 3, (0, 0, 255))
-                t += 5000/self.distance
+                t += 10/self.distance
     
             self.distance = 0
             self.fdt = round(1 / len(self.funcx), 5)
+            self.draw_vector(len(self.funcx) / 2, (400, 300))
+            print(self.coeff)
             print(len(self.funcx))
 
 
@@ -137,31 +170,21 @@ class Game:
         radius = 0
         count = 0
         while vector_num <= number:
-            circ = math.e ** (2 * math.pi * 1j * vector_num * self.sdt)
-            current_vectorx = vectorcalc.summation(self.funcx, vector_num, self.fdt, 'x', prev_vectorx) * circ
-            current_vectory = vectorcalc.summation(self.funcy, vector_num, self.fdt, 'y', prev_vectory) * circ
-            current_vector = vectorcalc.get_coefficient(current_vectorx, current_vectory)
-            # radius = math.sqrt((current_vector[0]) ** 2 + (current_vector[1]) ** 2)
-            # self.draw_circle((prev_vectorx, prev_vectory), int(radius), (255, 0, 0))
-            self.draw_line((prev_vectorx, prev_vectory), (prev_vectorx + current_vector[0], prev_vectory + current_vector[1]), (255, 100, 0))
-            if vector_num == number:
-                self.newd.append((prev_vectorx + current_vector[0], prev_vectory + current_vector[1]))
-                if len(self.newd) > 1:
-                    pygame.draw.lines(self.screen, (255, 0, 255), False, self.newd)
-                if self.sdt > 1:
-                    self.sdt = 0
-                    self.newd.clear()
-
+            current_vectorx = vectorcalc.summation(self.funcx, vector_num, self.fdt, 'x', prev_vectorx)
+            current_vectory = vectorcalc.summation(self.funcy, vector_num, self.fdt, 'y', prev_vectory)
+            current_vector = current_vectorx, current_vectory
+            self.coeff.append(current_vector)
             prev_vectorx += current_vector[0]
             prev_vectory += current_vector[1]
+
             vector_num *= -1
             vector_num += 1 if not vector_num <  0 else 0
 
-
+        
             
 
     def get_distance(self, ipos, fpos):
-        dis = ((abs(fpos[0] - ipos[0]) ** 2) + (abs(fpos[1] - ipos[1]) ** 2))
+        dis = math.sqrt((abs(fpos[0] - ipos[0]) ** 2) + (abs(fpos[1] - ipos[1]) ** 2))
         return dis
 
 

@@ -10,7 +10,7 @@ def summation(points, speed, dt, xy, prevpoint):
     sdt = 0
     m = 1j if xy == 'y' else 1
     for i in range(len(points)):
-        total += (points[i] - prevpoint) * m * math.e ** (2 * math.pi * 1j * -1 * speed * sdt) * dt
+        total += (points[i] - prevpoint) * m * math.e ** (-2j * math.pi * speed * sdt) * dt
         sdt += dt
     return total
 
